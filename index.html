@@ -187,6 +187,28 @@ label.ta{display:block;font-family:var(--display);font-weight:800;margin:18px 0 
 .mont{margin-top:16px;border-top:2px dashed var(--line);padding-top:12px}
 .mont summary{cursor:pointer;font-family:var(--display);font-weight:800}
 .mtext{margin:10px 0 0;background:var(--soft);border-radius:12px;padding:12px 14px}
+.score-hero{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:24px;align-items:center;background:var(--night);color:#f4f4f0;border-radius:20px;padding:24px 26px;margin-top:8px}
+.sh-n{display:flex;flex-direction:column;align-items:center}
+.sh-n .big{font-family:var(--display);font-weight:800;font-size:76px;line-height:.9;color:var(--yellow);font-variant-numeric:tabular-nums}
+.sh-n .of{font-size:14px;color:#b9bbc0}
+.lvl{display:inline-block;font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1}
+.sh-t p{margin:6px 0 0;color:#d4d6da;max-width:52ch}
+.sh-t .partial{font-size:14px;color:#b9bbc0}
+.scale{list-style:none;margin:0;padding:0;display:grid;gap:4px;min-width:170px}
+.scale li{display:flex;justify-content:space-between;gap:12px;padding:5px 10px;border-radius:8px;font-size:14px;color:#b9bbc0}
+.scale li b{font-weight:700}
+.scale li.on{background:var(--yellow);color:var(--night)}
+.rtable{display:grid;gap:8px;max-width:820px}
+.rrow{all:unset;cursor:pointer;display:grid;grid-template-columns:40px minmax(0,1fr) 180px 80px;gap:12px;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px 14px}
+.rrow:hover{border-color:var(--ink)}
+.rn{font-family:var(--display);font-weight:800;font-size:18px}
+.rt{font-weight:700}
+.rb{height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+.rb i{display:block;height:100%;background:var(--yellow)}
+.rv{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:15px}
+.todo{max-width:65ch;padding-left:20px;margin:0}
+.todo li{margin-bottom:6px}
+@media (max-width:760px){ .score-hero{grid-template-columns:1fr} .rrow{grid-template-columns:32px minmax(0,1fr) 64px} .rb{display:none} }
 footer{color:var(--muted);font-size:14px;max-width:1080px;margin:0 auto;padding:0 clamp(16px,4vw,32px) 30px}
 @media (max-width:760px){
   .hero{grid-template-columns:1fr}
@@ -373,14 +395,14 @@ let results = store.get("results", {});   // {aula-8:{0:true}}
 let seen = store.get("seen", {});         // {aula-8:[0,1]}
 let stepOf = {};                          // passo atual por aula, só na sessão
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const STATIONS = [...AULAS.map(a=>({id:a.id, dot:a.n, lb:a.titulo})), {id:"discursiva",dot:"D",lb:"Discursiva"}, {id:"checklist",dot:"✓",lb:"Pronto para a prova"}];
+const STATIONS = [...AULAS.map(a=>({id:a.id, dot:a.n, lb:a.titulo})), {id:"discursiva",dot:"D",lb:"Discursiva"}, {id:"resultado",dot:"★",lb:"Seu resultado"}];
 
 function score(a){ const r = results[a.id]||{}; return {done:Object.keys(r).length, ok:Object.values(r).filter(Boolean).length, total:a.qs.length}; }
 function stState(id){
   const a = AULAS.find(x=>x.id===id);
   if(a){ const s = score(a); if(s.done===s.total) return "done"; return (s.done||(seen[id]||[]).length)?"started":""; }
   if(id==="discursiva"){ const d = store.get("short",{}); const n = DISC.reduce((acc,r,i)=>acc+r.qs.filter((q,j)=>words(d[i+"-"+j]||"")>=4).length,0); const tot = DISC.reduce((a,r)=>a+r.qs.length,0); return n>=tot?"done":(n?"started":""); }
-  if(id==="checklist"){ const c = store.get("check",{}); const n = Object.values(c).filter(Boolean).length; return n===CHECK.length?"done":(n?"started":""); }
+  if(id==="resultado"){ const r = grade(); return r.complete?"done":(r.answered?"started":""); }
   return "";
 }
 function renderTrail(cur){
@@ -400,7 +422,7 @@ function nextStation(id){ const i = STATIONS.findIndex(s=>s.id===id); return STA
 function renderInicio(){
   const sts = STATIONS.map((s,i)=>{
     const a = AULAS.find(x=>x.id===s.id); const st = stState(s.id);
-    let sub = a ? `${a.cards.length} cartões · ${a.qs.length} questões` : (s.id==="discursiva"?"Respostas curtas":"Revisão final");
+    let sub = a ? `${a.cards.length} cartões · ${a.qs.length} questões` : (s.id==="discursiva"?"Respostas curtas":"Nota e classificação");
     if(a){ const sc = score(a); if(sc.done) sub = `Acertou ${sc.ok} de ${sc.total}`; }
     return `<button class="sta ${st}" data-go="${s.id}"><span class="n">${s.dot}</span><span class="t">${a?"Aula "+a.n+" · ":""}${esc(s.lb)}</span><span class="s">${st==="done"?"Concluída · ":st==="started"?"Em andamento · ":""}${sub}</span></button>`;
   }).join("");
@@ -408,7 +430,7 @@ function renderInicio(){
   return `<section class="hero">
     <div><p class="eyebrow">2ª Avaliação Bimestral</p>
     <h2>Siga a trilha, <em>estação por estação</em></h2>
-    <p class="lead">A prova cobre as Aulas 8 a 12: dez questões objetivas e uma discursiva. Cada aula é uma estação com três etapas. No fim, você treina a discursiva e confere o que já domina.</p>
+    <p class="lead">A prova cobre as Aulas 8 a 12: dez questões objetivas e uma discursiva. Cada aula é uma estação com três etapas. No fim, você treina a discursiva e recebe uma nota com a sua classificação de preparo.</p>
     <div class="row"><button class="btn go" data-go="${first.id}">${stState(first.id)?"Continuar":"Começar"} pela ${first.id.startsWith("aula")?"Aula "+first.dot:esc(first.lb)} →</button></div></div>
     <ol class="how">
       <li><span class="k">1</span><div><b>Ler</b><span>O resumo dos conceitos e autores da aula.</span></div></li>
@@ -489,7 +511,7 @@ function drawQuiz(a){
   };
 }
 
-/* ---------- discursiva e checklist ---------- */
+/* ---------- discursiva ---------- */
 const words = t => { t=(t||"").trim(); return t? t.split(/\s+/).length : 0; };
 const EX = {
  sw:["tup","bednarik","acessibilidade","estética","motivação","escola games","wordwall","kahoot","racha cuca","phet","khan","matific","gcompris"],
@@ -569,7 +591,7 @@ function renderDiscursiva(){
   <div class="row"><input id="nome" type="text" placeholder="Seu nome" class="pill-in" value="${esc(store.get("nome",""))}"><button class="btn go" id="copy">Copiar minhas respostas</button><span id="copied" class="copied" aria-live="polite"></span></div>
   <textarea id="copybox" readonly style="display:none;margin-top:10px;min-height:180px"></textarea>
   <p class="note" style="margin-top:16px">A conferência procura as ideias-chave de cada resposta; não corrige a gramática. Na prova, escreva na norma-padrão: erros de português descontam pontos. Suas respostas ficam salvas só neste navegador.</p>
-  <div class="pager"><button class="btn" data-go="aula-12">← Aula 12</button><button class="btn go" data-go="checklist">Última estação: checklist →</button></div>`;
+  <div class="pager"><button class="btn" data-go="aula-12">← Aula 12</button><button class="btn go" data-go="resultado">Última estação: seu resultado →</button></div>`;
 }
 function bindDiscursiva(){
   const showFb=(i,j,reveal)=>{ const q=DISC[i].qs[j], v=document.getElementById(`s${i}-${j}`).value, r=checkShort(q,v), el=document.getElementById(`f${i}-${j}`);
@@ -591,21 +613,56 @@ function bindDiscursiva(){
     catch(e){ box.value=txt; box.style.display="block"; box.focus(); box.select(); msg.textContent="Selecione o texto abaixo e copie (Ctrl+C)."; }
   };
 }
-function renderChecklist(){
-  const c=store.get("check",{});
-  return `<p class="eyebrow">Estação ${STATIONS.length} de ${STATIONS.length}</p><h2>Pronto para a <em>prova</em>?</h2>
-  <p class="lead">Marque cada item só quando conseguir explicá-lo sem consultar o material. O que ficar sem marcar indica a estação para revisar.</p>
-  ${CHECK.map((t,i)=>`<label class="check ${c[i]?"done":""}" for="c${i}"><input type="checkbox" id="c${i}" ${c[i]?"checked":""}><span>${esc(t)}</span></label>`).join("")}
+/* ---------- resultado ---------- */
+const LEVELS = [
+  {min:8.5, t:"Preparado", d:"Você domina o conteúdo das cinco aulas. Revise os erros pontuais e chegue tranquilo à prova."},
+  {min:7, t:"Quase lá", d:"Base boa. Revise as aulas com menor aproveitamento e refaça as questões que errou."},
+  {min:5, t:"No caminho", d:"Você já sabe parte do conteúdo. Volte ao resumo e aos cartões das aulas mais fracas antes de refazer as questões."},
+  {min:0, t:"Começando", d:"Ainda falta bastante. Siga a trilha do início: leia o resumo, passe pelos cartões e faça as questões de cada aula."}
+];
+function grade(){
+  const per = AULAS.map(a=>{ const s=score(a); return {a, ok:s.ok, done:s.done, total:s.total}; });
+  const qTot = per.reduce((x,p)=>x+p.total,0), qOk = per.reduce((x,p)=>x+p.ok,0), qDone = per.reduce((x,p)=>x+p.done,0);
+  const d = store.get("short",{}); let dTot=0, dOk=0, dDone=0;
+  const perD = DISC.map((r,i)=>{ let ok=0, done=0; r.qs.forEach((q,j)=>{ dTot++; const v=d[i+"-"+j]||""; if(words(v)>=4){ done++; dDone++; if(checkShort(q,v).ok){ ok++; dOk++; } } }); return {r:r.r, ok, done, total:r.qs.length}; });
+  const nota = 10*(0.7*(qOk/qTot) + 0.3*(dOk/dTot));
+  return {per, perD, qTot, qOk, qDone, dTot, dOk, dDone, nota, answered:qDone+dDone, complete:qDone===qTot && dDone===dTot};
+}
+function renderResultado(){
+  const g = grade(); const lv = LEVELS.find(l=>g.nota>=l.min);
+  const fmt = n => n.toFixed(1).replace(".",",");
+  const weak = g.per.filter(p=>p.done).sort((x,y)=>x.ok/x.total-y.ok/y.total)[0];
+  const pending = g.per.filter(p=>p.done<p.total);
+  const rows = g.per.map(p=>{ const pc=Math.round(p.ok/p.total*100);
+    return `<button class="rrow" data-go="${p.a.id}"><span class="rn">${p.a.n}</span><span class="rt">${p.a.titulo}</span><span class="rb"><i style="width:${pc}%"></i></span><span class="rv">${p.done?`${p.ok}/${p.total}`:"não feita"}</span></button>`; }).join("");
+  const dpc = Math.round(g.dOk/g.dTot*100);
+  return `<p class="eyebrow">Estação ${STATIONS.length} de ${STATIONS.length}</p><h2>Seu <em>resultado</em></h2>
+  <p class="lead">A nota combina as questões de treino das cinco aulas (70%) com as respostas curtas da discursiva (30%). Ela mostra como está o seu preparo e não vale para a média da disciplina.</p>
+  <section class="score-hero">
+    <div class="sh-n"><span class="big">${fmt(g.nota)}</span><span class="of">de 10</span></div>
+    <div class="sh-t"><span class="lvl">${lv.t}</span><p>${lv.d}</p>
+      ${!g.complete?`<p class="partial">Nota parcial: você respondeu ${g.qDone} de ${g.qTot} questões e ${g.dDone} de ${g.dTot} respostas curtas. O que falta conta como zero.</p>`:""}
+    </div>
+    <ol class="scale">${LEVELS.slice().reverse().map(l=>`<li class="${l===lv?"on":""}"><b>${l.t}</b><span>${l.min===0?"0 a 4,9":l.min===5?"5 a 6,9":l.min===7?"7 a 8,4":"8,5 a 10"}</span></li>`).join("")}</ol>
+  </section>
+  <h3>Por aula</h3><div class="rtable">${rows}
+    <button class="rrow" data-go="discursiva"><span class="rn">D</span><span class="rt">Discursiva (respostas curtas)</span><span class="rb"><i style="width:${dpc}%"></i></span><span class="rv">${g.dDone?`${g.dOk}/${g.dTot}`:"não feita"}</span></button></div>
+  <h3>O que fazer agora</h3>
+  <ul class="todo">
+    ${pending.length?`<li>Termine as questões de: ${pending.map(p=>"Aula "+p.a.n).join(", ")}.</li>`:""}
+    ${g.dDone<g.dTot?`<li>Responda às perguntas curtas da discursiva que faltam.</li>`:""}
+    ${weak && weak.ok<weak.total?`<li>Revise primeiro a <b>Aula ${weak.a.n} · ${weak.a.titulo}</b>, onde seu aproveitamento foi menor, e depois refaça as questões.</li>`:""}
+    ${g.dDone && g.dOk<g.dTot?`<li>Na discursiva, compare suas frases com as respostas-modelo das perguntas marcadas com "Quase".</li>`:""}
+    ${g.complete && g.nota>=8.5?`<li>Tudo em dia. Na véspera, passe de novo pelos cartões de cada aula.</li>`:""}
+  </ul>
   <div class="pager"><button class="btn" data-go="discursiva">← Discursiva</button><button class="btn go" data-go="inicio">Voltar ao início</button></div>`;
 }
-function bindChecklist(){ CHECK.forEach((t,i)=>{ const el=document.getElementById("c"+i); el.onchange=()=>{ const c=store.get("check",{}); c[i]=el.checked; store.set("check",c); el.parentElement.classList.toggle("done",el.checked); renderTrail("checklist"); }; }); }
-
 function route(){
   const h=(location.hash||"").slice(1)||"inicio"; const main=document.getElementById("main");
   const a=AULAS.find(x=>x.id===h); let cur=h;
   if(a){ main.innerHTML=renderAula(a); bindAula(a); }
   else if(h==="discursiva"){ main.innerHTML=renderDiscursiva(); bindDiscursiva(); }
-  else if(h==="checklist"){ main.innerHTML=renderChecklist(); bindChecklist(); }
+  else if(h==="resultado"){ main.innerHTML=renderResultado(); }
   else { cur="inicio"; main.innerHTML=renderInicio(); }
   main.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
   renderTrail(cur); window.scrollTo(0,0);
