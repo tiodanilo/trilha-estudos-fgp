@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estudo Dirigido – Aulas 8 a 12</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* Layout: faixa preta de "trilha" (linha de estações, como um mapa de metrô em amarelo FGP) fixa no topo;
+   cada estação abre em 3 etapas sequenciais (Ler → Memorizar → Treinar) com um botão "Continuar". */
+:root{
+  --night:#111214; --night-2:#1d1f23; --yellow:#f7c600; --yellow-deep:#e0b200;
+  --ink:#16181b; --paper:#fbfbf8; --panel:#ffffff; --line:#e3e3dd; --muted:#62666e; --soft:#fff4c2;
+  --ok:#17784a; --ok-soft:#e3f4ea; --bad:#b3261e; --bad-soft:#fbe8e6;
+  --display:"Bricolage Grotesque", "Arial Black", Arial, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#eeeeea; --paper:#141517; --panel:#1c1e21; --line:#2f3237; --muted:#a4a8af; --soft:#3a3212;
+    --ok:#69c891; --ok-soft:#14301f; --bad:#f08b81; --bad-soft:#3b1b18; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#eeeeea; --paper:#141517; --panel:#1c1e21; --line:#2f3237; --muted:#a4a8af; --soft:#3a3212;
+  --ok:#69c891; --ok-soft:#14301f; --bad:#f08b81; --bad-soft:#3b1b18; color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+button{font:inherit;color:inherit}
+
+/* ---------- faixa da trilha ---------- */
+.band{background:var(--night);color:#f4f4f0;position:sticky;top:0;z-index:5;box-shadow:0 2px 0 var(--yellow)}
+.band-in{max-width:1080px;margin:0 auto;padding:14px clamp(16px,4vw,32px) 0;display:flex;align-items:center;gap:16px}
+.logo{height:40px;width:auto;border-radius:2px;display:block}
+.band h1{font-family:var(--display);font-weight:800;font-size:18px;margin:0;line-height:1.1}
+.band small{display:block;color:#b9bbc0;font-size:13px}
+.pct{margin-left:auto;text-align:right;font-variant-numeric:tabular-nums}
+.pct b{font-family:var(--display);font-size:26px;color:var(--yellow);line-height:1}
+.pct span{display:block;font-size:12px;color:#b9bbc0}
+.trail-wrap{max-width:1080px;margin:0 auto;padding:10px clamp(16px,4vw,32px) 14px;overflow-x:auto}
+.trail{display:flex;align-items:flex-start;min-width:640px;position:relative}
+.trail::before{content:"";position:absolute;left:22px;right:22px;top:21px;height:6px;background:#3a3d43;border-radius:3px}
+.trail .fill{position:absolute;left:22px;top:21px;height:6px;background:var(--yellow);border-radius:3px;width:0}
+.st{all:unset;cursor:pointer;flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1;text-align:center}
+.st .dot{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:17px;
+  background:var(--night);border:5px solid #3a3d43;color:#f4f4f0}
+.st.started .dot{border-color:var(--yellow)}
+.st.done .dot{background:var(--yellow);border-color:var(--yellow);color:var(--night)}
+.st.here .dot{box-shadow:0 0 0 5px rgba(247,198,0,.35);transform:scale(1.08)}
+.st .lb{font-size:12px;font-weight:600;color:#c9cbd0;line-height:1.2;max-width:110px}
+.st.here .lb{color:var(--yellow)}
+.st:focus-visible .dot{outline:3px solid #fff;outline-offset:3px}
+
+/* ---------- conteúdo ---------- */
+main{max-width:1080px;margin:0 auto;padding:30px clamp(16px,4vw,32px) 70px}
+.eyebrow{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.04em;color:var(--muted);margin:0 0 4px}
+h2{font-family:var(--display);font-weight:800;font-size:clamp(30px,5vw,46px);line-height:1.02;margin:0 0 12px;letter-spacing:-.01em;text-wrap:balance}
+h2 em{font-style:normal;background:linear-gradient(transparent 58%, var(--yellow) 58%);padding:0 2px}
+.lead{color:var(--muted);max-width:65ch;margin:0 0 22px;font-size:18px}
+h3{font-family:var(--display);font-weight:800;font-size:22px;margin:30px 0 12px}
+
+/* passos da estação */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 24px}
+.step{all:unset;cursor:pointer;border-radius:12px;padding:12px 14px;background:var(--panel);border:2px solid var(--line);display:flex;gap:10px;align-items:center}
+.step .sn{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:15px;background:var(--line);flex:none}
+.step .st-t{font-weight:700;line-height:1.15}
+.step .st-s{font-size:13px;color:var(--muted)}
+.step.seen .sn{background:var(--ink);color:var(--paper)}
+.step[aria-current="step"]{border-color:var(--ink);background:var(--soft)}
+.step[aria-current="step"] .sn{background:var(--yellow);color:var(--night)}
+
+/* resumo */
+.concepts{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;counter-reset:c}
+.concept{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;position:relative}
+.concept::before{counter-increment:c;content:counter(c, decimal-leading-zero);font-family:var(--display);font-weight:800;font-size:13px;
+  background:var(--yellow);color:var(--night);padding:3px 8px;border-radius:6px;display:inline-block;margin-bottom:8px}
+.concept h4{font-family:var(--display);font-weight:800;font-size:18px;margin:0 0 6px;line-height:1.2}
+.concept p,.concept div{margin:0}
+.concept ul,.concept ol{margin:6px 0 0;padding-left:20px}
+.concept.wide{grid-column:1/-1}
+.authors{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;align-items:center}
+.authors b{font-size:14px;color:var(--muted);margin-right:4px}
+.chip{background:var(--night);color:#f4f4f0;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600}
+
+/* cartões */
+.flash{perspective:1400px;max-width:720px}
+.fc{all:unset;cursor:pointer;display:block;width:100%;height:260px;position:relative;transform-style:preserve-3d}
+.fc .side{position:absolute;inset:0;border-radius:18px;padding:26px 28px;display:flex;flex-direction:column;justify-content:center;backface-visibility:hidden}
+.fc .front{background:var(--night);color:#f6f6f2}
+.fc .back{background:var(--yellow);color:var(--night);transform:rotateY(180deg)}
+.fc.flipped{transform:rotateY(180deg)}
+.fc .tagl{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin-bottom:10px}
+.fc .front .txt{font-family:var(--display);font-weight:800;font-size:clamp(20px,3vw,27px);line-height:1.2;text-wrap:balance}
+.fc .back .txt{font-size:19px;line-height:1.45;font-weight:600}
+.fc .hint{position:absolute;right:22px;bottom:16px;font-size:13px;opacity:.7}
+.dots{display:flex;gap:6px;margin:14px 0}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--ink)}
+@media (prefers-reduced-motion:no-preference){ .fc{transition:transform .5s cubic-bezier(.3,.7,.2,1)} .st .dot{transition:transform .2s} }
+
+/* treino: uma questão por vez */
+.quiz{max-width:760px}
+.qhead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.qbar{flex:1;height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+.qbar i{display:block;height:100%;background:var(--yellow);width:0}
+.qcount{font-family:var(--display);font-weight:800;font-variant-numeric:tabular-nums}
+.qcard{background:var(--panel);border:2px solid var(--ink);border-radius:18px;padding:22px}
+.stem{font-family:var(--display);font-weight:800;font-size:21px;line-height:1.25;margin:0 0 6px}
+.multi{font-size:14px;color:var(--muted);font-weight:600;margin:0 0 10px}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:2px solid var(--line);border-radius:12px;margin-top:8px;cursor:pointer;background:var(--paper)}
+.opt:hover{border-color:var(--ink)}
+.opt input{margin-top:5px;width:18px;height:18px;accent-color:var(--night);flex:none}
+.opt.right{background:var(--ok-soft);border-color:var(--ok)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.fb{margin-top:14px;padding:12px 16px;border-radius:12px;font-size:16px}
+.fb.ok{background:var(--ok-soft);color:var(--ok)}
+.fb.no{background:var(--bad-soft);color:var(--bad)}
+.fb span{color:var(--ink)}
+.result{background:var(--night);color:#f4f4f0;border-radius:18px;padding:26px;max-width:760px}
+.result .big{font-family:var(--display);font-weight:800;font-size:56px;color:var(--yellow);line-height:1}
+.result p{margin:8px 0 0;color:#cfd1d5}
+.result .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+/* botões e navegação */
+.btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:999px;font-weight:700;font-size:16px;border:2px solid var(--ink);background:transparent}
+.btn:hover{background:var(--soft)}
+.btn.go{background:var(--yellow);border-color:var(--yellow);color:var(--night)}
+.btn.go:hover{background:var(--yellow-deep);border-color:var(--yellow-deep)}
+.btn.light{border-color:#f4f4f0;color:#f4f4f0}
+.btn.light:hover{background:#2a2c31}
+.pager{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:34px;padding-top:18px;border-top:2px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* início */
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;align-items:center}
+.hero h2{font-size:clamp(36px,6vw,60px)}
+.how{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.how li{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.how .k{font-family:var(--display);font-weight:800;background:var(--yellow);color:var(--night);border-radius:8px;min-width:30px;height:30px;display:grid;place-items:center}
+.how b{display:block}
+.how span{color:var(--muted);font-size:15px}
+.stations{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.sta{all:unset;cursor:pointer;background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:4px}
+.sta:hover{border-color:var(--ink)}
+.sta .n{font-family:var(--display);font-weight:800;font-size:34px;line-height:1}
+.sta .t{font-weight:700;line-height:1.2}
+.sta .s{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sta.done{border-color:var(--yellow);background:var(--soft)}
+.note{background:var(--soft);border-radius:12px;padding:12px 16px;max-width:65ch;font-size:15px}
+textarea{width:100%;min-height:100px;font:inherit;font-size:16px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);resize:vertical}
+textarea:focus{border-color:var(--ink);outline:none}
+label.ta{display:block;font-family:var(--display);font-weight:800;margin:18px 0 6px}
+.parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.check{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:2px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer;background:var(--panel);max-width:760px}
+.check input{margin-top:4px;width:20px;height:20px;accent-color:var(--night);flex:none}
+.check.done{border-color:var(--yellow);background:var(--soft)}
+.ta-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.ta-row .wc{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.review{margin-top:10px;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.review h5{font-family:var(--display);font-weight:800;font-size:16px;margin:0 0 8px;display:flex;align-items:center;gap:10px}
+.review .grade{background:var(--night);color:var(--yellow);border-radius:999px;padding:2px 10px;font-size:14px}
+.review ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.review li{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.review li .ic{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800}
+.review li.yes .ic{background:var(--ok-soft);color:var(--ok)}
+.review li.no .ic{background:var(--bad-soft);color:var(--bad)}
+.review li.warn .ic{background:var(--soft);color:var(--ink)}
+.review .disc{font-size:13px;color:var(--muted);margin:10px 0 0}
+.copied{font-size:14px;color:var(--ok);font-weight:600}
+footer{color:var(--muted);font-size:14px;max-width:1080px;margin:0 auto;padding:0 clamp(16px,4vw,32px) 30px}
+@media (max-width:760px){
+  .hero{grid-template-columns:1fr}
+  .band{position:static}
+  .steps{grid-template-columns:repeat(3,1fr);gap:6px}
+  .step{flex-direction:column;align-items:flex-start;gap:6px;padding:10px}
+  .step .st-s{display:none}
+  .band small,.pct span{display:none}
+  .fc{height:300px}
+}
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="band-in">
+    <img class="logo" src="data:image/jpeg;base64,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" alt="Faculdade FGP">
+    <div><h1>Trilha de estudos · Aulas 8 a 12</h1><small>Aplicativos Educacionais · Prof. Dr. Danilo Pires de Azevedo</small></div>
+    <div class="pct"><b id="pct">0%</b><span>da trilha</span></div>
+  </div>
+  <div class="trail-wrap"><nav class="trail" id="trail" aria-label="Estações da trilha"></nav></div>
+</header>
+<main id="main"></main>
+<footer>Material de estudo para a 2ª Avaliação Bimestral · Faculdade FGP</footer>
+<script>
+const AULAS = [
+{ id:"aula-8", n:8, titulo:"Software educacional",
+  lead:"Como o professor analisa e escolhe um software. Leia também o capítulo \"Software educacional\": parte do conteúdo está só nele.",
+  resumo:[
+   ["Software educacional","Programa usado com intenção pedagógica. Além de apoiar o ensino e a aprendizagem, pode colaborar com o desenvolvimento integral do estudante."],
+   ["Modelo TUP (Bednarik, 2004)","A sigla vem de <i>Technology, Usability and Pedagogy</i>: o software é avaliado em três grandes áreas, tecnologia, usabilidade e pedagogia. Três elementos foram destacados em aula:<ul><li><b style='display:inline'>Acessibilidade:</b> atende usuários com perfis e necessidades diferentes.</li><li><b style='display:inline'>Estética e áudio:</b> layout e interface compreensíveis e agradáveis, com bom uso de textos, imagens, animações e som.</li><li><b style='display:inline'>Motivação:</b> desperta o interesse do aluno para que cumpra os objetivos; pode usar recompensas.</li></ul>"],
+   ["O professor como avaliador","Antes de usar um software, o professor o analisa criticamente: serve para a idade da turma? Conversa com o currículo e com a proposta da escola? Como os alunos interagem com ele? A tecnologia sozinha não garante aprendizagem."],
+   ["Quatro habilidades docentes","Tecnológica, de avaliação, de mediação e de jogar."],
+   ["Sete tipos de software (Valente, 1999; Oliveira, 2001)","A classificação está no capítulo do livro. Anote os sete tipos e uma característica de cada um durante a leitura."]
+  ],
+  autores:"Bednarik (2004) · Valente (1999) · Oliveira (2001)",
+  cards:[
+   ["O que significa a sigla TUP?","<i>Technology, Usability and Pedagogy</i>: tecnologia, usabilidade e pedagogia, as três áreas do modelo de Bednarik (2004)."],
+   ["Quais os três elementos do modelo TUP destacados em aula?","Acessibilidade, estética e áudio, e motivação."],
+   ["No modelo TUP, o que é acessibilidade?","A capacidade de o programa atender usuários com perfis e necessidades diferentes."],
+   ["Quais são as quatro habilidades docentes para trabalhar com softwares?","Tecnológica, de avaliação, de mediação e de jogar."],
+   ["A tecnologia sozinha garante aprendizagem?","Não. O professor precisa avaliar o software: idade da turma, currículo, proposta pedagógica e interação dos alunos."]
+  ],
+  qs:[
+   {t:"O que significa a sigla TUP no modelo de Bednarik (2004)?",o:["Teaching, Use and Practice","Technology, Usability and Pedagogy","Tools, Users and Planning","Technology, Understanding and Play"],a:[1],e:"TUP = Technology, Usability and Pedagogy."},
+   {t:"No modelo TUP, qual elemento está ligado ao uso de recompensas para despertar o interesse do aluno?",o:["Acessibilidade","Estética e áudio","Usabilidade","Motivação"],a:[3],e:"A motivação busca despertar o interesse; recompensas são uma estratégia."},
+   {t:"Um software tem interface confusa, cores cansativas e áudio ruim. Qual elemento do modelo TUP ele não atende?",o:["Estética e áudio","Motivação","Acessibilidade","Interatividade"],a:[0],e:"Estética e áudio tratam do layout e da interface."},
+   {t:"Quais destas são habilidades docentes para trabalhar com softwares educacionais?",o:["Tecnológica","De jogar","De programação","De mediação","De avaliação"],a:[0,1,3,4],e:"As quatro habilidades: tecnológica, de avaliação, de mediação e de jogar."}
+  ]},
+{ id:"aula-9", n:9, titulo:"Objetos de aprendizagem",
+  lead:"O que é um objeto de aprendizagem (OA), como ele entra no planejamento e o que considerar ao escolher um.",
+  resumo:[
+   ["Objeto de aprendizagem (OA)","Recurso pedagógico digital que facilita a aprendizagem ao promover a interação entre o aluno e o conteúdo. Pode introduzir, aprofundar ou sistematizar um conteúdo."],
+   ["Tipos","Imagens, vídeos, animações e jogos."],
+   ["Um meio, não um fim","O OA não substitui o professor nem o planejamento. O uso começa no plano de aula, e na escolha os aspectos pedagógicos e técnicos são igualmente importantes."],
+   ["Planejamento de uso","Nome do OA, conteúdo, objetivo, justificativa e link. Exemplos da aula: \"Teste de Einstein\" (raciocínio lógico, no Racha Cuca) e \"Contexto\" (vocabulário e associação de ideias)."],
+   ["Cinco dimensões pedagógicas (Braga e Menezes, 2014)","<ul><li><b style='display:inline'>Interatividade:</b> possibilidade de o aluno interagir com o OA.</li><li><b style='display:inline'>Autonomia:</b> possibilidade de tomar decisões.</li><li><b style='display:inline'>Cooperação:</b> trabalho coletivo e troca de informações.</li><li><b style='display:inline'>Cognição:</b> possibilidade de desenvolvimento intelectual.</li><li><b style='display:inline'>Afetividade:</b> sentimentos e motivação ao usar o OA.</li></ul>"],
+   ["Repositórios","Bancos onde os OAs ficam organizados e catalogados, facilitando a busca e a reutilização: Escola Games, Kahoot!, Wayground (antigo Quizizz), Ludo Educativo, Matific, Smartkids, Racha Cuca, Khan Academy, PhET, Nova Escola, Educacross e Wordwall."],
+   ["Avaliação","O professor planeja como vai avaliar os alunos durante o uso do OA e como vai dar retorno sobre as atividades."]
+  ],
+  autores:"Braga e Menezes (2014)",
+  cards:[
+   ["O que é um objeto de aprendizagem?","Um recurso pedagógico digital que facilita a aprendizagem e promove a interação entre o aluno e o conteúdo."],
+   ["Interatividade (Braga e Menezes)","Possibilidade de o aluno interagir com o OA."],
+   ["Autonomia (Braga e Menezes)","Possibilidade de o aluno tomar decisões durante o uso."],
+   ["Cooperação (Braga e Menezes)","Trabalho coletivo e troca de informações entre alunos e com o professor."],
+   ["Cognição (Braga e Menezes)","Possibilidade de desenvolvimento intelectual."],
+   ["Afetividade (Braga e Menezes)","Sentimentos e motivação dos alunos ao usar o OA."],
+   ["O que é um repositório de OA?","Um banco onde os OAs ficam organizados e catalogados, o que facilita a busca e a reutilização."]
+  ],
+  qs:[
+   {t:"Objetos de aprendizagem são:",o:["Provas on-line para selecionar os melhores alunos","Recursos pedagógicos digitais que facilitam a aprendizagem e promovem a interação entre aluno e conteúdo","Programas que substituem o planejamento do professor","Apenas vídeos disponíveis na internet"],a:[1],e:"O OA é um meio para facilitar a aprendizagem."},
+   {t:"Em quais momentos da aula um OA pode ser usado?",o:["Para introduzir um conteúdo","Para aprofundar um conteúdo","Para sistematizar um conteúdo","Somente no dia da prova"],a:[0,1,2],e:"O OA pode introduzir, aprofundar ou sistematizar conteúdos."},
+   {t:"Os alunos usam um OA em grupo, trocando ideias entre si e com o professor. Qual dimensão de Braga e Menezes está sendo explorada?",o:["Autonomia","Afetividade","Cognição","Cooperação"],a:[3],e:"Cooperação: trabalho coletivo e troca de informações."},
+   {t:"Um OA que permite ao aluno escolher caminhos e tomar decisões explora qual dimensão?",o:["Autonomia","Interatividade","Cooperação","Afetividade"],a:[0],e:"Autonomia: possibilidade de tomar decisões."},
+   {t:"O que são os repositórios de objetos de aprendizagem?",o:["Redes sociais de professores","Bancos onde os OAs ficam organizados e catalogados, facilitando a busca e a reutilização","Programas para criar apresentações","Arquivos com provas antigas"],a:[1],e:"Exemplos: Escola Games, PhET, Khan Academy, Wordwall."}
+  ]},
+{ id:"aula-10", n:10, titulo:"Sites como recurso pedagógico",
+  lead:"Como o professor seleciona, testa e planeja o uso de um site em sala de aula.",
+  resumo:[
+   ["Site educacional","Qualquer site pode se tornar educacional, dependendo da análise do professor sobre o conteúdo e as informações. Bem escolhidos, estimulam a curiosidade, motivam e ajudam a aprofundar o que foi visto em aula."],
+   ["Critérios de escolha","Pedagógicos: público-alvo, faixa etária, realidade educacional (aspectos cognitivos, físicos e afetivos), conhecimentos prévios e design. Técnicos: tempo de carregamento, programas extras, navegação, links funcionando e acessibilidade."],
+   ["Sites mudam e saem do ar","O Flash Player foi encerrado em 2020 e vários jogos antigos não abrem mais. Por isso testar o site na escola, antes da aula, é um critério."],
+   ["Checklist em seis passos","<ol><li>Escolher o site</li><li>Testá-lo na escola</li><li>Definir os objetivos pedagógicos</li><li>Descrever os materiais</li><li>Descrever a atividade</li><li>Definir a avaliação</li></ol>"],
+   ["Qualidade da informação","Notícias falsas circulam rápido, e em sites como a Wikipédia qualquer pessoa edita. Para Palfrey e Gasser (2011), a educação é a melhor forma de ajudar os alunos a cruzar e checar informações. Lévy (1999) define o ciberespaço como a rede e o universo de informações e pessoas que ela abriga."],
+   ["Planejamento e avaliação","Para Vasconcellos (2010), planejar parte da realidade concreta dos alunos. O plano de uso do site integra o plano de aula, com o aluno como protagonista, e a avaliação é formativa: acompanha participação e envolvimento durante o processo."],
+   ["Curadoria: adoto, adapto ou descarto","Critérios pedagógicos (faixa etária, objetivo, confiabilidade, protagonismo, retorno ao erro) e técnicos (funcionamento, navegação e design, acessibilidade, segurança)."]
+  ],
+  autores:"Lévy (1999) · Palfrey e Gasser (2011) · Vasconcellos (2010)",
+  cards:[
+   ["Quando um site se torna educacional?","Quando o professor analisa o conteúdo e as informações e o usa com intenção pedagógica."],
+   ["Por que testar o site na escola antes da aula?","Sites mudam, saem do ar ou dependem de programas descontinuados, como o Flash Player."],
+   ["Cite três critérios técnicos para escolher um site","Tempo de carregamento, navegação e links funcionando (também: programas extras e acessibilidade)."],
+   ["Para Palfrey e Gasser, como lidar com a qualidade da informação?","Pela educação: ensinar os alunos a cruzar e checar informações antes de confiar nelas."],
+   ["Como deve ser a avaliação em atividades com sites?","Formativa, acompanhando a participação e o envolvimento durante todo o processo."]
+  ],
+  qs:[
+   {t:"Assinale a alternativa INCORRETA sobre a escolha de sites educacionais.",o:["Qualquer site pode se tornar educacional, dependendo da análise do professor","Testar o site na escola antes da aula é um critério importante","O professor deve considerar a faixa etária e os conhecimentos prévios dos alunos","Como o site já é educativo, o professor não precisa definir objetivos de aprendizagem"],a:[3],e:"Os objetivos de aprendizagem orientam a seleção do site."},
+   {t:"Qual destes é um critério TÉCNICO na escolha de um site?",o:["Faixa etária dos alunos","Tempo de carregamento","Conhecimentos prévios","Realidade educacional"],a:[1],e:"Técnicos: carregamento, programas extras, navegação, links e acessibilidade."},
+   {t:"Por que o professor deve testar o site na escola antes da aula?",o:["Porque a lei exige","Para decorar as respostas dos jogos","Não é necessário, pois sites educacionais não mudam","Porque sites mudam, saem do ar ou dependem de programas descontinuados"],a:[3],e:"É o passo 2 do checklist."},
+   {t:"Para Palfrey e Gasser (2011), qual é a melhor forma de ajudar os alunos a lidar com a qualidade da informação?",o:["Proibir pesquisas na internet","Usar apenas a Wikipédia","A educação","Deixar essa tarefa só para a família"],a:[2],e:"A educação desenvolve a habilidade de checar informações."},
+   {t:"Nas atividades com sites, a avaliação dos alunos deve ser:",o:["Somativa, com uma prova no final","Formativa, acompanhando participação e envolvimento","Feita automaticamente pelo site","Dispensada"],a:[1],e:"A avaliação formativa acompanha todo o processo."}
+  ]},
+{ id:"aula-11", n:11, titulo:"O celular em sala de aula",
+  lead:"Os argumentos sobre o celular na escola, o que diz a lei atual e como planejar e avaliar um projeto. O capítulo do livro é anterior à Lei nº 15.100/2025: estude a lei pelos slides.",
+  resumo:[
+   ["Vantagens e desvantagens","Vantagens: agiliza tarefas, dá acesso ao conhecimento de formas diferentes, oferece muitas possibilidades didáticas, apoia alunos com deficiência e permite aprender em qualquer hora e lugar. Desvantagens: pode tirar a atenção, e muitos alunos usam o aparelho mais para redes sociais e jogos."],
+   ["Possibilidades de uso","Fotos e vídeos para registro, produção de vídeos e áudios, aplicativos, podcasts, pesquisa, e-books, cronômetro, mapas e tradutores. Ferramentas: Google Drive, Photomath, Duolingo, Google Earth, Kahoot!, Mentimeter, Padlet e Canva."],
+   ["\"Nova roupagem\" (Camargo e Daros, 2018)","É quando a tecnologia só reveste o ensino tradicional, baseado na transmissão de conteúdo, e o aluno continua passivo. O uso pedagógico de verdade coloca o aluno como sujeito ativo, crítico e autônomo, e o professor como mediador."],
+   ["Lei nº 15.100/2025 (13/01/2025)","<ul><li>Vale para escolas públicas e privadas de toda a educação básica; não se aplica ao ensino superior.</li><li>Objetivo: proteger a saúde mental, física e psíquica de crianças e adolescentes.</li><li>Regra geral: estudantes não usam aparelhos eletrônicos portáteis pessoais durante a aula, o recreio e os intervalos. \"Sala de aula\" é todo espaço com atividade pedagógica orientada, incluindo pátio e quadra.</li><li>Exceções: fins estritamente pedagógicos ou didáticos, com orientação dos profissionais da educação; acessibilidade, inclusão, saúde e direitos fundamentais, em qualquer etapa e local; perigo, necessidade ou força maior.</li></ul>"],
+   ["Decreto nº 12.385/2025","Regulamenta a lei. Cada escola define seus critérios para o uso pedagógico e promove ações de conscientização; o MEC publicou guias de orientação."],
+   ["Projeto \"Conhecendo nossa cidade\"","Em grupos, os alunos pesquisam pontos turísticos, montam um mapa, exploram os locais no Google Street View e apresentam a pesquisa histórica no Google Apresentações para as famílias."],
+   ["Avaliação formativa (Hoffmann, 2009)","Considera o desenvolvimento, o comprometimento e o envolvimento do aluno durante todo o processo. O professor acompanha por meio de observações e registros."],
+   ["Inclusão e segurança digital","Um celular por grupo, para que ninguém fique de fora. Crianças com menos de 13 anos não podem criar conta na maioria dos aplicativos: a conta deve ser do professor."]
+  ],
+  autores:"Camargo e Daros (2018) · Hoffmann (2009) · Lei nº 15.100/2025 · Decreto nº 12.385/2025",
+  cards:[
+   ["O que proíbe a Lei nº 15.100/2025?","O uso de aparelhos eletrônicos portáteis pessoais por estudantes durante a aula, o recreio e os intervalos, em toda a educação básica."],
+   ["Quando a lei permite o celular em sala?","Para fins estritamente pedagógicos ou didáticos, com orientação dos profissionais da educação."],
+   ["Quais outras exceções a lei prevê?","Acessibilidade, inclusão, saúde e direitos fundamentais (em qualquer etapa e local), além de perigo, necessidade ou força maior."],
+   ["A lei vale para o ensino superior?","Não. Vale para escolas públicas e privadas da educação básica."],
+   ["O que é a \"nova roupagem\" (Camargo e Daros)?","Usar a tecnologia só para revestir o ensino tradicional de transmissão, com o aluno passivo."],
+   ["Avaliação formativa segundo Hoffmann","Considera o desenvolvimento, o comprometimento e o envolvimento do aluno no processo, com observações e registros do professor."]
+  ],
+  qs:[
+   {t:"Segundo a Lei nº 15.100/2025, o uso do celular por estudantes em sala de aula é:",o:["Proibido em qualquer situação","Livre, desde que a família autorize","Permitido para fins estritamente pedagógicos ou didáticos, conforme orientação dos profissionais da educação","Permitido apenas no recreio"],a:[2],e:"Art. 2º, § 1º da lei."},
+   {t:"Pela Lei nº 15.100/2025, em quais situações o estudante pode usar o aparelho?",o:["Para garantir acessibilidade e inclusão","Por condições de saúde do estudante","Em situações de perigo ou força maior","No recreio, para lazer"],a:[0,1,2],e:"A lei proíbe o uso no recreio e nos intervalos."},
+   {t:"A Lei nº 15.100/2025 vale para:",o:["Escolas públicas e privadas da educação básica","Apenas escolas públicas","Educação básica e ensino superior","Apenas o ensino médio"],a:[0],e:"Não se aplica ao ensino superior."},
+   {t:"Uma professora de Ciências quer usar o celular sem cair na \"nova roupagem\". Qual proposta é coerente?",o:["Enviar o texto da aula para os alunos copiarem","Liberar o celular nos últimos minutos como prêmio","Em grupos, fotografar plantas do pátio, identificá-las com um aplicativo e discutir as descobertas","Deixar cada aluno pesquisar livremente, sem orientação"],a:[2],e:"O aluno age e o professor media."},
+   {t:"Segundo Hoffmann (2009), a avaliação formativa considera:",o:["Apenas uma prova escrita no final","O desenvolvimento, o comprometimento e o envolvimento do aluno durante o processo","Somente o uso correto do aparelho","As métricas do aplicativo usado"],a:[1],e:"O professor acompanha com observações e registros."}
+  ]},
+{ id:"aula-12", n:12, titulo:"Tecnologia assistiva",
+  lead:"O que é tecnologia assistiva (TA), como ela entra na escola e como o professor adapta um recurso pedagógico.",
+  resumo:[
+   ["Tecnologia assistiva (TA)","Recursos que ampliam as habilidades funcionais de pessoas com limitação, deficiência ou transtorno, possibilitando a inclusão. Manzini (2005) cita uma bengala, um aparelho de amplificação para surdez moderada e um veículo adaptado."],
+   ["Do simples ao complexo","Recursos de baixo custo, como engrossadores de lápis feitos com espuma, papel fixado na mesa com fita e pranchas presas à cadeira de rodas (Garcia e Galvão Filho, 2012), até recursos computacionais, como leitores de tela."],
+   ["Onde usar na escola","Sala de aula, laboratório de informática, pátio e sala de atendimento educacional especializado."],
+   ["Categorias de TA (Manzini, 2005)","Elementos arquitetônicos e sensoriais, computadores, controles ambientais, vida independente, mobilidade, recreação e esporte, mobiliário adaptado e serviços de TA."],
+   ["O papel do professor","Testar o recurso, planejar o uso pensando nas intenções pedagógicas e atuar como mediador e orientador, considerando as especificidades de cada aluno. A TA não dispensa o professor."],
+   ["Sete passos para adaptar um recurso (Manzini e Santos, 2002)","<ol><li>Entender a situação que envolve o estudante</li><li>Gerar ideias</li><li>Escolher a alternativa viável</li><li>Representar a ideia</li><li>Construir o objeto para experimentação</li><li>Avaliar o uso do objeto</li><li>Acompanhar o uso</li></ol>"],
+   ["Adaptar × flexibilizar","Adaptar muda o meio de acesso ao conteúdo (leitor de tela, Libras, prancha de comunicação, teclado virtual). Flexibilizar muda o tempo, a quantidade ou a forma (mais tempo, menos itens, resposta oral ou por desenho). O objetivo de aprendizagem continua o mesmo."],
+   ["TA no projeto político-pedagógico","A escola deve considerá-la no PPP, levando em conta aspectos técnicos, pedagógicos e de infraestrutura."],
+   ["Softwares e aplicativos","Dosvox e NVDA (deficiência visual), Hand Talk e VLibras (deficiência auditiva), teclado virtual (deficiência física), Matraquinha (comunicação por imagens), GCompris (jogos). Alguns recursos do livro foram descontinuados, como ProDeaf e Easy Voice: teste sempre antes."],
+   ["Educar na diversidade (Bersch e Schirmer, 2005)","O debate sobre inclusão não deve se concentrar só na deficiência, mas em como educar na diversidade, que é parte da condição humana."]
+  ],
+  autores:"Manzini (2005) · Manzini e Santos (2002) · Bersch e Schirmer (2005) · Garcia e Galvão Filho (2012)",
+  cards:[
+   ["O que é tecnologia assistiva?","Recursos que ampliam as habilidades funcionais de pessoas com limitação, deficiência ou transtorno, possibilitando a inclusão."],
+   ["Dê um exemplo de TA de baixo custo","Engrossador de lápis feito com espuma (ou papel fixado na mesa com fita adesiva)."],
+   ["Qual o primeiro passo para adaptar um recurso (Manzini e Santos)?","Entender a situação que envolve o estudante."],
+   ["Quais são os sete passos de Manzini e Santos?","Entender a situação, gerar ideias, escolher a alternativa viável, representar a ideia, construir o objeto, avaliar o uso e acompanhar o uso."],
+   ["Adaptar ou flexibilizar: dar mais tempo para a tarefa","Flexibilizar (muda o tempo, a quantidade ou a forma)."],
+   ["Que aspectos considerar ao incluir a TA no PPP?","Técnicos, pedagógicos e de infraestrutura."]
+  ],
+  qs:[
+   {t:"Um engrossador de lápis feito com espuma é um exemplo de:",o:["Objeto de aprendizagem","Tecnologia assistiva de baixo custo","Software educacional","Material que não é tecnologia assistiva"],a:[1],e:"As TAs vão de recursos simples até recursos computacionais."},
+   {t:"Nos passos de Manzini e Santos (2002), o que vem logo depois de \"gerar ideias\"?",o:["Acompanhar o uso","Construir o objeto para experimentação","Escolher a alternativa viável","Entender a situação do estudante"],a:[2],e:"Entender, gerar ideias, escolher, representar, construir, avaliar, acompanhar."},
+   {t:"Dar mais tempo para um aluno concluir a tarefa, mantendo o mesmo objetivo, é um exemplo de:",o:["Adaptação","Flexibilização","Exclusão","Avaliação somativa"],a:[1],e:"Flexibilizar muda tempo, quantidade ou forma."},
+   {t:"Qual recurso traduz conteúdo para Libras e pode ajudar uma estudante surda?",o:["NVDA","Dosvox","Teclado virtual","VLibras"],a:[3],e:"NVDA e Dosvox atendem pessoas com deficiência visual."},
+   {t:"O que o professor deve fazer ao usar tecnologias assistivas?",o:["Testar o recurso antes","Planejar o uso pensando nas intenções pedagógicas","Atuar como mediador e orientador","Deixar o aluno usar sozinho, sem acompanhamento"],a:[0,1,2],e:"O professor testa, planeja e media o uso."}
+  ]}
+];
+
+const CHECK = [
+ "Explico o modelo TUP e os elementos destacados em aula.",
+ "Sei as quatro habilidades docentes e como o professor avalia um software.",
+ "Defino objeto de aprendizagem e explico as cinco dimensões de Braga e Menezes.",
+ "Sei montar o planejamento de uso de um OA e cito repositórios.",
+ "Sei os critérios pedagógicos e técnicos para escolher um site e o checklist de seis passos.",
+ "Explico o que a Lei nº 15.100/2025 proíbe, permite e excetua, e o papel do Decreto nº 12.385/2025.",
+ "Explico a crítica da \"nova roupagem\" e a avaliação formativa de Hoffmann.",
+ "Defino tecnologia assistiva e dou exemplos simples e complexos.",
+ "Sei os sete passos de Manzini e Santos e a diferença entre adaptar e flexibilizar.",
+ "Escrevi um parágrafo de treino para cada recurso da discursiva."
+];
+const RECURSOS = ["Softwares educacionais","Objetos de aprendizagem","Sites educacionais","O celular (considerando a Lei nº 15.100/2025)","Tecnologias assistivas"];
+
+
+const STEPS = [["Ler","o resumo"],["Memorizar","com os cartões"],["Treinar","com questões"]];
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem("fgp-trilha-"+k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem("fgp-trilha-"+k, JSON.stringify(v)); }catch(e){} }
+};
+let results = store.get("results", {});   // {aula-8:{0:true}}
+let seen = store.get("seen", {});         // {aula-8:[0,1]}
+let stepOf = {};                          // passo atual por aula, só na sessão
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const STATIONS = [...AULAS.map(a=>({id:a.id, dot:a.n, lb:a.titulo})), {id:"discursiva",dot:"D",lb:"Discursiva"}, {id:"checklist",dot:"✓",lb:"Pronto para a prova"}];
+
+function score(a){ const r = results[a.id]||{}; return {done:Object.keys(r).length, ok:Object.values(r).filter(Boolean).length, total:a.qs.length}; }
+function stState(id){
+  const a = AULAS.find(x=>x.id===id);
+  if(a){ const s = score(a); if(s.done===s.total) return "done"; return (s.done||(seen[id]||[]).length)?"started":""; }
+  if(id==="discursiva"){ const d = store.get("drafts",{}); const n = Object.values(d).filter(v=>v && v.trim().length>40).length; return n>=RECURSOS.length?"done":(n?"started":""); }
+  if(id==="checklist"){ const c = store.get("check",{}); const n = Object.values(c).filter(Boolean).length; return n===CHECK.length?"done":(n?"started":""); }
+  return "";
+}
+function renderTrail(cur){
+  const states = STATIONS.map(s=>stState(s.id));
+  const doneN = states.filter(x=>x==="done").length;
+  document.getElementById("pct").textContent = Math.round(doneN/STATIONS.length*100)+"%";
+  let lastDone = -1; states.forEach((s,i)=>{ if(s==="done") lastDone=i; });
+  const t = document.getElementById("trail");
+  t.innerHTML = `<i class="fill" style="width:calc(${lastDone<0?0:lastDone/(STATIONS.length-1)*100}% - ${lastDone<0?0:44*lastDone/(STATIONS.length-1)}px)"></i>` +
+    STATIONS.map((s,i)=>`<button class="st ${states[i]} ${cur===s.id?"here":""}" data-go="${s.id}" ${cur===s.id?'aria-current="page"':''} title="${esc(s.lb)}"><span class="dot">${s.dot}</span><span class="lb">${esc(s.lb)}</span></button>`).join("");
+  t.querySelectorAll(".st").forEach(b=>b.onclick=()=>go(b.dataset.go));
+}
+function go(id){ if(location.hash.slice(1)===id) route(); else location.hash = id; }
+function nextStation(id){ const i = STATIONS.findIndex(s=>s.id===id); return STATIONS[i+1]; }
+
+/* ---------- início ---------- */
+function renderInicio(){
+  const sts = STATIONS.map((s,i)=>{
+    const a = AULAS.find(x=>x.id===s.id); const st = stState(s.id);
+    let sub = a ? `${a.cards.length} cartões · ${a.qs.length} questões` : (s.id==="discursiva"?"Treino escrito":"Revisão final");
+    if(a){ const sc = score(a); if(sc.done) sub = `Acertou ${sc.ok} de ${sc.total}`; }
+    return `<button class="sta ${st}" data-go="${s.id}"><span class="n">${s.dot}</span><span class="t">${a?"Aula "+a.n+" · ":""}${esc(s.lb)}</span><span class="s">${st==="done"?"Concluída · ":st==="started"?"Em andamento · ":""}${sub}</span></button>`;
+  }).join("");
+  const first = STATIONS.find(s=>stState(s.id)!=="done") || STATIONS[0];
+  return `<section class="hero">
+    <div><p class="eyebrow">2ª Avaliação Bimestral</p>
+    <h2>Siga a trilha, <em>estação por estação</em></h2>
+    <p class="lead">A prova cobre as Aulas 8 a 12: dez questões objetivas e uma discursiva. Cada aula é uma estação com três etapas. No fim, você treina a discursiva e confere o que já domina.</p>
+    <div class="row"><button class="btn go" data-go="${first.id}">${stState(first.id)?"Continuar":"Começar"} pela ${first.id.startsWith("aula")?"Aula "+first.dot:esc(first.lb)} →</button></div></div>
+    <ol class="how">
+      <li><span class="k">1</span><div><b>Ler</b><span>O resumo dos conceitos e autores da aula.</span></div></li>
+      <li><span class="k">2</span><div><b>Memorizar</b><span>Cartões: tente responder antes de virar.</span></div></li>
+      <li><span class="k">3</span><div><b>Treinar</b><span>Questões com correção e explicação na hora.</span></div></li>
+    </ol></section>
+  <h3>As estações</h3><div class="stations">${sts}</div>
+  <h3>Antes de começar</h3>
+  <p class="note">O resumo não substitui os slides e o capítulo do livro de cada aula. Seu progresso fica salvo só neste navegador: em outro aparelho, a trilha começa do zero.</p>`;
+}
+
+/* ---------- estação de aula ---------- */
+function renderAula(a){
+  const step = stepOf[a.id] ?? 0;
+  seen[a.id] = [...new Set([...(seen[a.id]||[]), step])]; store.set("seen", seen);
+  const idx = STATIONS.findIndex(s=>s.id===a.id);
+  const steps = STEPS.map(([t,s],i)=>`<button class="step ${(seen[a.id]||[]).includes(i)?"seen":""}" data-step="${i}" ${i===step?'aria-current="step"':''}><span class="sn">${i+1}</span><span><span class="st-t">${t}</span><br><span class="st-s">${s}</span></span></button>`).join("");
+  let body = "";
+  if(step===0){
+    body = `<div class="concepts">${a.resumo.map(([t,d])=>`<article class="concept ${d.length>420?"wide":""}"><h4>${t}</h4><div>${d}</div></article>`).join("")}</div>
+      <div class="authors"><b>Autores para lembrar</b>${a.autores.split(" · ").map(x=>`<span class="chip">${x}</span>`).join("")}</div>`;
+  } else if(step===1){
+    body = `<div class="flash"><button class="fc" id="fc" aria-live="polite"></button><div class="dots" id="dots"></div>
+      <div class="row"><button class="btn" id="prev">← Anterior</button><button class="btn" id="flip">Virar cartão</button><button class="btn go" id="next">Próximo cartão →</button></div></div>`;
+  } else {
+    body = `<div id="quiz"></div>`;
+  }
+  const nx = nextStation(a.id);
+  const back = step>0 ? `<button class="btn" data-stepgo="${step-1}">← ${STEPS[step-1][0]}</button>` : `<button class="btn" data-go="${idx>0?STATIONS[idx-1].id:"inicio"}">← ${idx>0?"Estação anterior":"Início"}</button>`;
+  const fwd = step<2 ? `<button class="btn go" data-stepgo="${step+1}">Continuar: ${STEPS[step+1][0]} →</button>` : `<button class="btn go" data-go="${nx.id}">Próxima estação: ${nx.id.startsWith("aula")?"Aula "+nx.dot:esc(nx.lb)} →</button>`;
+  return `<p class="eyebrow">Estação ${idx+1} de ${STATIONS.length} · Aula ${a.n}</p><h2>${a.titulo}</h2><p class="lead">${a.lead}</p>
+    <div class="steps" role="tablist" aria-label="Etapas">${steps}</div>${body}
+    <div class="pager">${back}${fwd}</div>`;
+}
+function bindAula(a){
+  const step = stepOf[a.id] ?? 0;
+  document.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>{ stepOf[a.id]=+b.dataset.step; route(); });
+  document.querySelectorAll("[data-stepgo]").forEach(b=>b.onclick=()=>{ stepOf[a.id]=+b.dataset.stepgo; route(); });
+  if(step===1) bindCards(a);
+  if(step===2) drawQuiz(a);
+}
+function bindCards(a){
+  let k=0, fl=false; const fc=document.getElementById("fc");
+  const draw=()=>{ const [f,b]=a.cards[k];
+    fc.classList.toggle("flipped",fl);
+    fc.innerHTML=`<span class="side front"><span class="tagl">Pergunta ${k+1} de ${a.cards.length}</span><span class="txt">${f}</span><span class="hint">Clique para virar</span></span><span class="side back"><span class="tagl">Resposta</span><span class="txt">${b}</span><span class="hint">Clique para voltar</span></span>`;
+    document.getElementById("dots").innerHTML=a.cards.map((_,i)=>`<i class="${i===k?"on":""}"></i>`).join(""); };
+  fc.onclick=()=>{fl=!fl;fc.classList.toggle("flipped",fl);};
+  document.getElementById("flip").onclick=fc.onclick;
+  document.getElementById("next").onclick=()=>{k=(k+1)%a.cards.length;fl=false;draw();};
+  document.getElementById("prev").onclick=()=>{k=(k-1+a.cards.length)%a.cards.length;fl=false;draw();};
+  draw();
+}
+function drawQuiz(a){
+  const box=document.getElementById("quiz"); const r=results[a.id]||{};
+  const i=a.qs.findIndex((_,j)=>!(j in r));
+  const sc=score(a);
+  if(i<0){
+    box.innerHTML=`<div class="result"><div class="big">${sc.ok}/${sc.total}</div><p>${sc.ok===sc.total?"Estação concluída sem erros.":sc.ok>=sc.total-1?"Estação concluída. Releia a explicação do que errou.":"Estação concluída. Vale voltar ao resumo antes de seguir."}</p>
+      <div class="row"><button class="btn light" id="redo">Refazer as questões</button><button class="btn light" id="toread">Voltar ao resumo</button></div></div>`;
+    document.getElementById("redo").onclick=()=>{delete results[a.id];store.set("results",results);drawQuiz(a);renderTrail(a.id);};
+    document.getElementById("toread").onclick=()=>{stepOf[a.id]=0;route();};
+    return;
+  }
+  const q=a.qs[i], multi=q.a.length>1, type=multi?"checkbox":"radio";
+  box.innerHTML=`<div class="quiz"><div class="qhead"><span class="qcount">${i+1}/${a.qs.length}</span><div class="qbar"><i style="width:${Math.round(i/a.qs.length*100)}%"></i></div><span class="qcount">✓ ${sc.ok}</span></div>
+    <div class="qcard"><p class="stem">${esc(q.t)}</p>${multi?'<p class="multi">Marque todas as corretas</p>':""}
+    ${q.o.map((o,j)=>`<label class="opt" for="o${j}"><input type="${type}" name="q" id="o${j}" value="${j}"><span>${esc(o)}</span></label>`).join("")}
+    <div id="fb"></div><div class="row" style="margin-top:14px"><button class="btn go" id="conf">Conferir</button></div></div></div>`;
+  document.getElementById("conf").onclick=()=>{
+    const ch=[...box.querySelectorAll("input:checked")].map(x=>+x.value); const fb=document.getElementById("fb");
+    if(!ch.length){ fb.innerHTML=`<div class="fb no">Escolha uma alternativa antes de conferir.</div>`; return; }
+    const ok=ch.length===q.a.length && ch.every(c=>q.a.includes(c));
+    box.querySelectorAll(".opt").forEach((el,j)=>{ el.classList.toggle("right",q.a.includes(j)); el.classList.toggle("wrong",ch.includes(j)&&!q.a.includes(j)); el.querySelector("input").disabled=true; });
+    fb.innerHTML=`<div class="fb ${ok?"ok":"no"}"><strong>${ok?"Acertou!":"Ainda não."}</strong> <span>${esc(q.e)}</span></div>`;
+    results[a.id]=results[a.id]||{}; results[a.id][i]=ok; store.set("results",results); renderTrail(a.id);
+    const btn=document.getElementById("conf"); btn.textContent = i+1<a.qs.length?"Próxima questão →":"Ver resultado →"; btn.onclick=()=>drawQuiz(a);
+  };
+}
+
+/* ---------- discursiva e checklist ---------- */
+const RUBRIC = [
+  { ex:["tup","bednarik","acessibilidade","estética","motivação","escola games","wordwall","kahoot","racha cuca","phet","khan","matific","zorelha","gcompris"],
+    exLabel:"um software ou um critério visto em aula (ex.: modelo TUP, motivação, acessibilidade)" },
+  { ex:["racha cuca","teste de einstein","contexto","phet","wordwall","khan","matific","escola games","kahoot","ludo educativo","smartkids","zorelha","nova escola","educacross","repositório"],
+    exLabel:"um OA ou repositório visto em aula (ex.: Teste de Einstein, PhET, Wordwall)" },
+  { ex:["escola games","smartkids","escola kids","khan","calcule mais","arkos","nova escola","fábrica de palavras","conjuga","guerra ao mosquito"],
+    exLabel:"um site visto em aula (ex.: Escola Games, Khan Academy, Arkos)" },
+  { ex:["street view","conhecendo nossa cidade","câmera lenta","camera lenta","cronômetro","cronometro","kahoot","google earth","photomath","duolingo","google lens","inaturalist","podcast","fotograf","mentimeter","padlet"],
+    exLabel:"uma atividade ou aplicativo visto em aula (ex.: projeto Conhecendo nossa cidade, câmera lenta)",
+    must:[/15[.\s]?100|\blei\b/i, "Cite a Lei nº 15.100/2025 e o que ela permite"] },
+  { ex:["dosvox","nvda","vlibras","hand talk","handtalk","engrossador","teclado virtual","prancha","leitor de tela","libras","matraquinha","bengala","seeing ai"],
+    exLabel:"um recurso de TA visto em aula (ex.: Dosvox, VLibras, engrossador de lápis)" }
+];
+function reviewText(i, txt){
+  const t = txt.toLowerCase(); const words = txt.trim().split(/\s+/).filter(Boolean).length;
+  const items = [];
+  const add = (st, msg) => items.push([st,msg]);
+  if(words < 20) add("no", `Está curto (${words} palavras). A resposta pede 3 ou 4 linhas, cerca de 30 a 70 palavras.`);
+  else if(words > 110) add("warn", `Está longo (${words} palavras). A resposta pede 3 ou 4 linhas: corte o que repete.`);
+  else add("yes", `Tamanho adequado (${words} palavras).`);
+  /(^|[\s,(])(é|são|consiste|trata-se|refere-se|chamad[oa]s?|significa)(?=[\s,:])/.test(t) ? add("yes","Apresenta o que é o recurso.") : add("no","Comece dizendo o que é o recurso, em uma frase.");
+  /(aprend|contribu|favorec|permit|possibilit|desenvolv|estimul|facilit|amplia|inclus)/.test(t) ? add("yes","Explica como o recurso contribui para a aprendizagem.") : add("no","Diga como o recurso contribui para o ensino e a aprendizagem.");
+  RUBRIC[i].ex.some(k=>t.includes(k)) ? add("yes","Cita um exemplo visto em aula.") : add("no","Cite pelo nome "+RUBRIC[i].exLabel+".");
+  /(planej|intenc|intencional|mediad|mediaç|media o|objetivo|pedagóg|orienta)/.test(t) ? add("yes","Menciona a condição para funcionar (planejamento, mediação ou intenção pedagógica).") : add("no","Mostre a condição para funcionar: planejamento, mediação do professor ou intenção pedagógica.");
+  if(RUBRIC[i].must){ RUBRIC[i].must[0].test(txt) ? add("yes","Relaciona o uso do celular à Lei nº 15.100/2025.") : add("no", RUBRIC[i].must[1]+"."); }
+  if(/a tecnologia (ajuda|é importante|é boa)|muito importante|super importante/.test(t)) add("warn","Evite frases genéricas como \"a tecnologia ajuda\": diga como, com o exemplo.");
+  const sentences = txt.split(/[.!?]+/).filter(x=>x.trim().length>3);
+  if(sentences.length && !/^[A-ZÁÉÍÓÚÂÊÔÃÕÇ]/.test(txt.trim())) add("warn","Comece a frase com letra maiúscula.");
+  if(txt.trim() && !/[.!?]$/.test(txt.trim())) add("warn","Termine o parágrafo com ponto final.");
+  const got = items.filter(x=>x[0]==="yes").length, total = items.filter(x=>x[0]!=="warn").length;
+  return {items, got, total};
+}
+function reviewHTML(i, txt){
+  if(!txt.trim()) return `<div class="review"><p class="disc" style="margin:0">Escreva o parágrafo e clique em "Revisar meu parágrafo".</p></div>`;
+  const r = reviewText(i, txt);
+  return `<div class="review"><h5>Revisão automática <span class="grade">${r.got} de ${r.total} elementos</span></h5><ul>${r.items.map(([st,m])=>`<li class="${st}"><span class="ic">${st==="yes"?"✓":st==="no"?"!":"i"}</span><span>${esc(m)}</span></li>`).join("")}</ul>
+  <p class="disc">A revisão procura os elementos de uma boa resposta e palavras-chave da aula. Ela não corrige o conteúdo nem a gramática: quem avalia de verdade é o professor.</p></div>`;
+}
+function renderDiscursiva(){
+  const d=store.get("drafts",{}); const idx=STATIONS.findIndex(s=>s.id==="discursiva");
+  return `<p class="eyebrow">Estação ${idx+1} de ${STATIONS.length}</p><h2>Treine a <em>discursiva</em></h2>
+  <p class="lead">A discursiva pede que você relacione os recursos tecnológicos do bimestre à aprendizagem, com exemplos vistos em aula. Escreva 3 ou 4 linhas para cada recurso e peça uma revisão.</p>
+  <h3>Uma boa resposta tem quatro partes</h3>
+  <ol class="how parts"><li><span class="k">1</span><div><b>O que é</b><span>O recurso, em uma frase.</span></div></li><li><span class="k">2</span><div><b>Como contribui</b><span>Para o ensino e a aprendizagem.</span></div></li><li><span class="k">3</span><div><b>Exemplo</b><span>Concreto, citado pelo nome, visto em aula.</span></div></li><li><span class="k">4</span><div><b>Condição</b><span>Planejamento, intenção pedagógica ou o que a lei permite.</span></div></li></ol>
+  <h3>Seus parágrafos</h3>
+  ${RECURSOS.map((r,i)=>`<label class="ta" for="d${i}">${i+1}. ${r}</label><textarea id="d${i}" placeholder="O que é, como contribui, um exemplo da aula e a condição para funcionar.">${esc(d[i]||"")}</textarea>
+    <div class="ta-row"><button class="btn" data-rev="${i}">Revisar meu parágrafo</button><span class="wc" id="wc${i}"></span></div><div id="rv${i}"></div>`).join("")}
+  <h3>Enviar para o professor</h3>
+  <p class="lead" style="margin-bottom:10px">Copie seus parágrafos e cole onde o professor pedir (e-mail, AVA ou grupo da turma).</p>
+  <div class="row"><input id="nome" type="text" placeholder="Seu nome" style="font:inherit;padding:10px 14px;border:2px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);min-width:240px" value="${esc(store.get("nome",""))}"><button class="btn go" id="copy">Copiar minhas respostas</button><span id="copied" class="copied" aria-live="polite"></span></div>
+  <textarea id="copybox" readonly style="display:none;margin-top:10px;min-height:180px"></textarea>
+  <p class="note" style="margin-top:16px">Escreva na norma-padrão: na prova, erros de português descontam pontos. O texto fica salvo só neste navegador.</p>
+  <div class="pager"><button class="btn" data-go="aula-12">← Aula 12</button><button class="btn go" data-go="checklist">Última estação: checklist →</button></div>`;
+}
+function bindDiscursiva(){
+  const wc = i => { const t=document.getElementById("d"+i).value.trim(); const n=t?t.split(/\s+/).length:0; document.getElementById("wc"+i).textContent = n? n+" palavras":""; };
+  RECURSOS.forEach((r,i)=>{ const t=document.getElementById("d"+i); wc(i);
+    t.oninput=()=>{ const d=store.get("drafts",{}); d[i]=t.value; store.set("drafts",d); wc(i); renderTrail("discursiva"); }; });
+  document.querySelectorAll("[data-rev]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.rev; document.getElementById("rv"+i).innerHTML = reviewHTML(i, document.getElementById("d"+i).value); });
+  const nome=document.getElementById("nome"); nome.oninput=()=>store.set("nome",nome.value);
+  document.getElementById("copy").onclick=async()=>{
+    const d=store.get("drafts",{});
+    const txt = `Treino da discursiva – ${nome.value||"(sem nome)"}\n\n` + RECURSOS.map((r,i)=>`${i+1}. ${r}\n${(d[i]||"").trim()||"(sem resposta)"}`).join("\n\n");
+    const msg=document.getElementById("copied"), box=document.getElementById("copybox");
+    try{ await navigator.clipboard.writeText(txt); msg.textContent="Copiado! Agora é só colar."; box.style.display="none"; }
+    catch(e){ box.value=txt; box.style.display="block"; box.focus(); box.select(); msg.textContent="Selecione o texto abaixo e copie (Ctrl+C)."; }
+  };
+}
+function renderChecklist(){
+  const c=store.get("check",{});
+  return `<p class="eyebrow">Estação ${STATIONS.length} de ${STATIONS.length}</p><h2>Pronto para a <em>prova</em>?</h2>
+  <p class="lead">Marque cada item só quando conseguir explicá-lo sem consultar o material. O que ficar sem marcar indica a estação para revisar.</p>
+  ${CHECK.map((t,i)=>`<label class="check ${c[i]?"done":""}" for="c${i}"><input type="checkbox" id="c${i}" ${c[i]?"checked":""}><span>${esc(t)}</span></label>`).join("")}
+  <div class="pager"><button class="btn" data-go="discursiva">← Discursiva</button><button class="btn go" data-go="inicio">Voltar ao início</button></div>`;
+}
+function bindChecklist(){ CHECK.forEach((t,i)=>{ const el=document.getElementById("c"+i); el.onchange=()=>{ const c=store.get("check",{}); c[i]=el.checked; store.set("check",c); el.parentElement.classList.toggle("done",el.checked); renderTrail("checklist"); }; }); }
+
+function route(){
+  const h=(location.hash||"").slice(1)||"inicio"; const main=document.getElementById("main");
+  const a=AULAS.find(x=>x.id===h); let cur=h;
+  if(a){ main.innerHTML=renderAula(a); bindAula(a); }
+  else if(h==="discursiva"){ main.innerHTML=renderDiscursiva(); bindDiscursiva(); }
+  else if(h==="checklist"){ main.innerHTML=renderChecklist(); bindChecklist(); }
+  else { cur="inicio"; main.innerHTML=renderInicio(); }
+  main.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  renderTrail(cur); window.scrollTo(0,0);
+}
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
