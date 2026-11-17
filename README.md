@@ -8,7 +8,7 @@ A página é uma trilha em sequência. Cada aula é uma estação com três etap
 2. **Memorizar**: cartões de pergunta e resposta.
 3. **Treinar**: questões com correção e explicação na hora.
 
-No fim da trilha há o treino da questão discursiva, com uma revisão automática dos elementos da resposta e um botão para copiar o texto e enviar ao professor, e um checklist final.
+No fim da trilha há o treino da questão discursiva em frases curtas: cada recurso tem três perguntas de uma frase, conferidas na hora por ideias-chave e com resposta-modelo. A página junta as frases no parágrafo da discursiva, e um botão copia tudo para enviar ao professor. Por último, um checklist final.
 
 Aulas: 8 (Software educacional), 9 (Objetos de aprendizagem), 10 (Sites como recurso pedagógico), 11 (O celular em sala de aula) e 12 (Tecnologia assistiva).
 
